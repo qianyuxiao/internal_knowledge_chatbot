@@ -1,17 +1,3 @@
-# internal_knowledge_chatbot
-To Add/Modify Vector Store by Topic
-1. Create vertex vector store in workbench, if it chatbot_id exists already, you need to delete the endpoint under https://console.cloud.google.com/vertex-ai/matching-engine/indexes?project=ecg-ai-416210 and me-bucket under gcp bucket https://console.cloud.google.com/storage/browser?project=ecg-ai-416210&pageState=(%22StorageBucketsTable%22:(%22f%22:%22%255B%255D%22,%22s%22:%5B(%22i%22:%22name%22,%22s%22:%220%22)%5D,%22r%22:30))&prefix=&forceOnBucketsSortingFiltering=true manually before being able 
-2. Download me parameters to local $gsutil cp gs://{chatbot_id}/me_parameters/{chatbot_id}_me.json ../vector_store_me_parameters/
-3. add_docs_to_vectorstore
-
-To Run chatbot web:
-run $streamlit run app.py args --server.fileWatcherType none
-if it runs and fails, please run sudo lsof -i :8501 check the pid and kill it by sudo kill -9 pid
-
-
-
----
-
 # Vector Store Management and Chatbot Web Application
 
 This repository contains scripts and instructions for managing a vector store by topic and running a chatbot web application.
