@@ -73,3 +73,5 @@ def create_index_and_endpoint(
     print(f"Index and Endpoint created, you can find its parameters under {file_path}")
 
     return me_dict
+
+#!gsutil cp ecg_assurance_me.json gs://ecg_assurance/me_parameters
