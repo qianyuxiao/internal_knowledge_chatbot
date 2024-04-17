@@ -12,8 +12,8 @@ google-cloud-secret-manager
 
 streamlit
 
-#local llm
-transformer
+# #local llm
+# transformer
 
 # extract text from image
 rapidocr-onnxruntime
@@ -30,4 +30,5 @@ pdfminer.six==20221105
 pillow-heif==0.15.0 
 opencv-python==4.9.0.80 
 unstructured-inference==0.7.24 
-pikepdf==8.13.0 pypdf==4.
+pikepdf==8.13.0 
+pypdf==4.
