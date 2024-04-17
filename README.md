@@ -37,11 +37,11 @@ All Vector Store organized by chatbot-id.
 2. **Handling Failures:**
    - In case the application fails to run, execute the following command to check for processes running on port 8501.
      ```bash
-     sudo lsof -i :8501
+     sudo lsof -i :8502
      ```
    - Identify the PID (Process ID) associated with the application and kill it using:
      ```bash
-     sudo kill -9 pid
+     sudo kill -9 {pid}
      ```
 
 ---
