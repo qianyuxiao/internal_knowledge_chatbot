@@ -95,6 +95,10 @@ def main():
         'Show Ref. Content?',
         (False, True))
     
+    ### SLIDER
+    search_distance = st.sidebar.slider('Retriver search distance',0.0, 1.0, 0.75)
+    search_nb_docs = st.sidebar.slider('Retriver search maximum docs',1, 8, 4)
+    
     ### Buttons
     st.sidebar.button('Reset Chat', on_click=reset_conversation, type="primary")
     st.sidebar.button('Clear Vector Store Cache', on_click=reset_vector_store, type="primary")
@@ -157,30 +161,36 @@ def main():
         else:
             refined_question = question_prompt
             
-        contexts = me.similarity_search(refined_question, k=5)
+        contexts = me.similarity_search(refined_question, k=search_nb_docs,search_distance=search_distance)
         response = conversation.predict(input=f"Context:\n {contexts} \n\n Query:\n{question_prompt}")
         
         with st.chat_message("assistant"):
             st.write(response)
-            
+            print(response)
             #get reference documents
             source_and_articles = set()
             for _, s_ in enumerate(contexts):
                 source = s_.metadata.get("source")
                 source = '/'.join(source.split('/')[3:])
                 title = s_.metadata.get("title")
-                page = int(s_.metadata.get("page"))+1
+                page = s_.metadata.get("page")
                 page_content = s_.page_content
                 print(s_)
-                if title ==None:
-                    title =""            
+                title_msg = ""
+                if title !=None:
+                    title_msg = f"Title {title}, "
+                page_msg=""
+                if page !=None:
+                    page = int(page) + 1
+                    page_msg = f"Page {page}, "            
                 if show_ref_content_option:
-                    source_and_articles.add(f"""Page {page} {title} of {source}.\n\n Detailed content: {page_content} """)
+                    source_and_articles.add(f"""{source} {page_msg}{title_msg}.\n\n Detailed content: {page_content} """)
                 else:
-                    source_and_articles.add(f"""Page {page} {title} of {source} """)
+                    source_and_articles.add(f"""{source} {page_msg}{title_msg} """)
             
-            if len(contexts)>0 and response!="Do you want to ask a question?":
-                # show reference documents     
+            if len(contexts)>0 and response.strip()!="Do you want to ask a question?":
+                # show reference documents
+                st.write("-"*100)     
                 st.markdown(f"Reference documents under [google drive]({g_link}):")
                 for item in source_and_articles:
                     st.write(item)
