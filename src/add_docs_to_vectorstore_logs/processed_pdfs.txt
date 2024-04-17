@@ -1,1 +1,9 @@
 
+'../documents/ecg_assurance/Contrats 2024/LOCAUX DE STOCKAGE/NEW Contratto polizza magazzino Manerba.pdf',
+'../documents/ecg_assurance/Contrats 2024/LOCAUX DE STOCKAGE/Avenant police LOCAUX DE STOCKAGE Allianz 2024.pdf',
+'../documents/ecg_assurance/Contrats 2024/LOCAUX DE STOCKAGE/Avenant police LOCAUX DE STOCKAGE LPS Allianz 2024.pdf',
+'../documents/ecg_assurance/Contrats 2024/LOCAUX DE STOCKAGE/Avenant 2024 Police locaux de stockage Allianz.pdf',
+'../documents/ecg_assurance/Contrats 2024/LOCAUX DE STOCKAGE/Avenant LPS 2024 police locaux de stockage Allianz.pdf',
+'../documents/ecg_assurance/Contrats 2024/RCMS/CI10476799 ECG TOPCO - Attestation 2023.pdf',
+'../documents/ecg_assurance/Contrats 2024/RCMS/POLICE RCMS SIGNEE 2023 2024.pdf',
+'../documents/ecg_assurance/Contrats 2024/RCMS/CI 10476799 ECG TOPCO - Avenant 1.pdf',

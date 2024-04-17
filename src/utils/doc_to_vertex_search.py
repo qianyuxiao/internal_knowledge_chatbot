@@ -46,7 +46,7 @@ def text_to_chunk(articles,
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
-        separators=["\n\n","\n", ".", "!", "?"] #, ".", "!", "?", ",", " ", ""
+        separators=["\n\n", ".", "!", "?"]
     )
     doc_splits_list = []
     for article in articles:
