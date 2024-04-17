@@ -1,0 +1,33 @@
+langchain
+pypdf
+google-cloud-aiplatform==1.42.1
+langchain-google-vertexai==0.0.5 
+typing_extensions==4.9.0
+
+
+tensorflow_hub==0.16.1 
+tensorflow_text
+
+google-cloud-secret-manager
+
+streamlit
+
+#local llm
+transformer
+
+# extract text from image
+rapidocr-onnxruntime
+
+# google loader
+# ! sudo apt -y -qq install tesseract-ocr libtesseract-dev
+# ! sudo apt-get -y -qq install poppler-utils
+# ! pip install --user --upgrade 
+unstructured==0.12.4 
+pdf2image==1.17.0 
+pytesseract==0.3.10 
+pdfminer.six==20221105
+# ! pip install --user --upgrade 
+pillow-heif==0.15.0 
+opencv-python==4.9.0.80 
+unstructured-inference==0.7.24 
+pikepdf==8.13.0 pypdf==4.
