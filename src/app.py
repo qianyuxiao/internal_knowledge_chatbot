@@ -73,11 +73,12 @@ def main():
     ## Set title and sidebar
     
     ## Header
-    title = "🤖ECG Internal Knowledge Chatbot"
-    st.set_page_config(page_title="ECG Internal Knowledge Chatbot", page_icon="🤖")
+    title = "ECG Internal Knowledge Chatbot"
+    st.set_page_config(page_title="ECG Internal Knowledge Chatbot", page_icon="https://jobs.europeancampinggroup.com/generated_contents/images/company_logo_career/ZMbqNXm9-logo-ecg-new-small.png")
     st.title(title)
     
     ## Sidebar
+    st.sidebar.image("https://jobs.europeancampinggroup.com/generated_contents/images/company_logo_career/ZMbqNXm9-logo-ecg-new-small.png")
     st.sidebar.title('Usage and Limitation')
     st.sidebar.write("- LLMs generate responses based on information they learned from their training datasets, but they are not knowledge bases. They may generate incorrect or outdated factual statements.")
     st.sidebar.markdown("- You can find the original documents that chatbot is retrieving knowledge from [here](https://drive.google.com/drive/folders/1TtxvSAeDBQh50r18OOOIoUyCbbAfHq-W)")
@@ -85,7 +86,10 @@ def main():
     ### Choice box
     topic_option = st.sidebar.selectbox(
         'Topic',
-        ("DPO", "HR","Insurance"))
+        ("Insurance","DPO", "HR"))
+    
+    search_distance = st.sidebar.slider('Retriver search distance',0.0, 1.0, 0.70)
+    search_nb_docs = st.sidebar.slider('Retriver search maximum docs',1, 8, 4)
     
     model_option = st.sidebar.selectbox(
         'Chatbot model',
@@ -94,11 +98,6 @@ def main():
     show_ref_content_option = st.sidebar.selectbox(
         'Show Ref. Content?',
         (False, True))
-    
-    ### SLIDER
-    search_distance = st.sidebar.slider('Retriver search distance',0.0, 1.0, 0.75)
-    search_nb_docs = st.sidebar.slider('Retriver search maximum docs',1, 8, 4)
-    
     ### Buttons
     st.sidebar.button('Reset Chat', on_click=reset_conversation, type="primary")
     st.sidebar.button('Clear Vector Store Cache', on_click=reset_vector_store, type="primary")
@@ -187,11 +186,11 @@ def main():
                     source_and_articles.add(f"""{source} {page_msg}{title_msg}.\n\n Detailed content: {page_content} """)
                 else:
                     source_and_articles.add(f"""{source} {page_msg}{title_msg} """)
-            
+                    
+            st.write("-"*100)
+            st.markdown(f"Info based on documents under [google drive]({g_link})")
             if len(contexts)>0 and response.strip()!="Do you want to ask a question?":
-                # show reference documents
-                st.write("-"*100)     
-                st.markdown(f"Reference documents under [google drive]({g_link}):")
+                # show reference documents                    
                 for item in source_and_articles:
                     st.write(item)
                 
