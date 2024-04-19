@@ -1,0 +1,21 @@
+Sur la partie contrats :
+
+- Le Bel Air est assuré par quelle compagnie ?
+- Les MH de ce camping sont assurés par quelle compagnie ?
+- Quelle est la franchise en cas de catastrophe naturelle ? MH
+- Quel est la franchise en cas de bris de glace ? Auto
+- Quelles sont les exclusions de garantie ? - contracts MH/Camping/Auto
+- Quel est le montant annuel de la prime ? - contracts MH/Camping/Auto
+- Quelle est la date d'échéance de ce contrat ? - contracts MH/Camping/Auto
+- Quelles sont les conditions de résiliation ? - contracts MH/Camping/Auto
+
+Sur la partie suivi des sinistres :
+
+- Combien de sinistres a-t-on en 2022 sur le camping Y ?
+- Combien d'accidents auto ont impliqué la marque Roan ?
+- Quel est le pourcentage de dossiers clos en 2023 ?
+
+DPO:
+Je n'aurai pas le temps de traiter la demande de droit à l'oubli d'un utilisateur dans le mois règlementaire imposé par la CNIL. Ai-je un recours ?
+J'ai des difficultés à comprendre les différentes obligations que j'ai vis-à-vis des sous-traitants qui travaillent pour moi. Pourrais-tu me faire un résumé ?
+Je ne sais pas quand est-ce qu'une analyse d'impact est indispensable ou non pour un traitement. Peux-tu m'expliquer clairement quand est-ce que je dois les réaliser et de manière simple ?

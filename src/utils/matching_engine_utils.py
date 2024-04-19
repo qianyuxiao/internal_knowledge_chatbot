@@ -80,7 +80,7 @@ class MatchingEngineUtils:
         index_algorithm: str = "tree-ah",
         shard_size: str = "SHARD_SIZE_SMALL",
         distance_measure_type: str = "DOT_PRODUCT_DISTANCE",
-        description: str = "Index for LangChain demo",
+        description: str = "",
     ):
         # Get index
         index = self.get_index()

@@ -37,10 +37,18 @@ def reset_conversation():
   st.session_state.memory.clear()
   
 # chatbot related cache function    
-@st.cache_resource
-def load_model(model_option):
+# @st.cache_resource
+def load_model(model_option,
+               temperature,
+               top_p,
+               top_k
+               ):
     print_info(f"Load model {model_option}")
-    llm = get_llm(model_option)   
+    llm = get_llm(model_option,
+                  temperature=temperature,
+                  top_p=top_p,
+                  top_k=top_k
+                  )   
     return llm
 
 @st.cache_resource
@@ -90,10 +98,15 @@ def main():
     
     search_distance = st.sidebar.slider('Retriver search distance',0.0, 1.0, 0.70)
     search_nb_docs = st.sidebar.slider('Retriver search maximum docs',1, 8, 4)
+    llm_temperature = st.sidebar.slider('Chat model temperature',0.0, 1.0, 0.10)
+    llm_top_p = st.sidebar.slider('Chat model top p',0.0, 1.0, 0.75)
+    llm_top_k = st.sidebar.slider('Chat model top k',1, 40, 20)
     
-    model_option = st.sidebar.selectbox(
-        'Chatbot model',
-        ("chat-bison", "gemini-pro" ))
+    # model_option = st.sidebar.selectbox(
+    #     'Chatbot model',
+    #     ("chat-bison", "gemini-pro" ))
+    
+    model_option = "chat-bison"
     
     show_ref_content_option = st.sidebar.selectbox(
         'Show Ref. Content?',
@@ -103,7 +116,11 @@ def main():
     st.sidebar.button('Clear Vector Store Cache', on_click=reset_vector_store, type="primary")
     
     # Load and cache chatbot element
-    llm = load_model(model_option)
+    llm = load_model(model_option,
+               temperature=llm_temperature,
+               top_p=llm_top_p,
+               top_k=llm_top_k
+               )
     me = load_vector_store(topic_option)
     prompt_template = load_qa_template(model_option)
     g_link = get_google_doc_link(topic_option)
@@ -151,7 +168,7 @@ def main():
             
         # get answer and stream answer
         start = datetime.now()
-        conversation = ConversationChain(memory=st.session_state.memory, prompt=prompt_template, llm=llm, verbose=False)
+        
         
         #get refined question based on conversation history
         if len(st.session_state.messages)>2:
@@ -159,8 +176,18 @@ def main():
             st.write(f"Refined question based on conversation history: {refined_question}")
         else:
             refined_question = question_prompt
-            
-        contexts = me.similarity_search(refined_question, k=search_nb_docs,search_distance=search_distance)
+        
+        # retrive documents
+        contexts = me.similarity_search(refined_question,
+                                        k=search_nb_docs,
+                                        search_distance=search_distance)
+        
+        # conversation chain
+        conversation = ConversationChain(memory=st.session_state.memory, 
+                                         prompt=prompt_template, 
+                                         llm=llm, 
+                                         verbose=False)
+        
         response = conversation.predict(input=f"Context:\n {contexts} \n\n Query:\n{question_prompt}")
         
         with st.chat_message("assistant"):

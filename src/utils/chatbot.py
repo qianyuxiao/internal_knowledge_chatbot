@@ -33,7 +33,7 @@ def query_refiner(conversation:str,
     '''
     model = TextGenerationModel.from_pretrained(text_model)
     response = model.predict(
-    prompt=f"Given the following user query and conversation log, formulate a question that would be the most relevant to provide the user with an answer from a knowledge base.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {query}\n\nRefined Query:",
+    prompt=f"Given the following user query and conversation log, formulate a question that includes all the entities or subject mentioned would be the most relevant to provide the user with an answer from a knowledge base specifying the subject if it's mentioned.\n\nCONVERSATION LOG: \n{conversation}\n\nQuery: {query}\n\nRefined Query:",
     temperature=0,
     max_output_tokens=256,
     top_p=0.7,
@@ -97,14 +97,13 @@ def get_template(model_option):
             template="""
             You are an intelligent assistant helping the users with their questions.
             
-            Strictly Use ONLY the provided context to answer the question at the end. Think step-by-step and then answer.
+            Strictly Use ONLY the provided context to answer the question at the end. Think step-by-step as below and then answer.
         
             Response style:
             - Always citing the document title that you are generating answer from.
             
             Do not try to make up an answer:
-            - If the answer to the question cannot be determined from the context alone, say "I cannot determine the answer to that based on documents that I have got from google drive below."
-            - If the context is empty, just  say "I cannot determine the answer to that based on documents that I have got from google drive below."
+            - If the context is empty or the answer to the question cannot be determined from the context alone, say "I cannot determine the answer to that based on documents that I have got from google drive below."
             - If it's not a question, just say "Do you want to ask a question?"
             """
         )
@@ -118,7 +117,7 @@ def get_template(model_option):
     return prompt_template
 
 def get_memory():
-    memory = ConversationBufferWindowMemory(k=3,
+    memory = ConversationBufferWindowMemory(k=0,#to remove conversation history as we are using extra agent to generate question
                                             return_messages=True)
     return memory
 

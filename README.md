@@ -44,6 +44,8 @@ All Vector Store organized by chatbot-id.
      sudo kill -9 {pid}
      ```
 
+3. **Reference**
+   - [How to use Insurance documents](https://docs.google.com/document/d/1tEfC0ebZDBpDwmxZM5mCYC4dAHOCOp9Sj1ht74APxI4/edit)
 ---
 
 Feel free to customize it further according to your specific needs and details!

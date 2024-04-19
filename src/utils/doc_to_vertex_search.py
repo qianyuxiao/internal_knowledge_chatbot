@@ -36,21 +36,28 @@ def split_pages_into_artiles(pages,  header_spliter = "ARTICLE"):
     return articles
 
 # split articles to chunk
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
 
-def text_to_chunk(articles,
-                  chunk_size= 1000,
-                  chunk_overlap=100
+def doc_to_chunk( docs,
+                  recusive = False,
+                  chunk_size= 500,
+                  chunk_overlap=20
                   ):
-    
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", ".", "!", "?"]
-    )
+    if recusive:
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=["\n\n", ".", "!", "?"]
+        )
+    else:
+        text_splitter = CharacterTextSplitter(
+            separator="\n\n",
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap
+        )
     doc_splits_list = []
-    for article in articles:
-        doc_splits = text_splitter.split_documents([article])
+    for doc in docs:
+        doc_splits = text_splitter.split_documents([doc])
 
         # Add chunk number to metadata
         for idx, split in enumerate(doc_splits):
