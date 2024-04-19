@@ -40,8 +40,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTex
 
 def doc_to_chunk( docs,
                   recusive = False,
-                  chunk_size= 500,
-                  chunk_overlap=20
+                  chunk_size= 1024,
+                  chunk_overlap=200
                   ):
     if recusive:
         text_splitter = RecursiveCharacterTextSplitter(

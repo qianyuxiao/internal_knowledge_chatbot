@@ -17,7 +17,7 @@ All Vector Store organized by chatbot-id.
 2. **Download Parameters:**
    - Download the necessary parameters to your local machine.
      ```bash
-     gsutil cp gs://${chatbot_id}/me_parameters/${chatbot_id}_me.json ../vector_store_me_parameters/
+     gsutil cp gs://ecg_dpo/me_parameters/ecg_dpo_me.json ../vector_store_me_parameters/
      ```
 
 3. **Add Documents to Vector Store:**
