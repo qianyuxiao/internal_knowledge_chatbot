@@ -94,7 +94,7 @@ def main():
     ### Choice box
     topic_option = st.sidebar.selectbox(
         'Topic',
-        ("Insurance","DPO", "HR"))
+        ("CNIL","Insurance","DPO", "HR"))
     
     search_distance = st.sidebar.slider('Retriver search distance',0.0, 1.0, 0.70)
     search_nb_docs = st.sidebar.slider('Retriver search maximum docs',1, 8, 4)

@@ -1,85 +1,23 @@
 import re
 from langchain_core.documents.base import Document
-
-def split_pages_into_artiles(pages,  header_spliter = "ARTICLE"):
-    articles = []
-    title_ = ''
-    for pn_, page in enumerate(pages):
-
-        page_content = page.page_content
-        metadata = page.metadata.copy()
-        metadata['page']+=1
+import json
+from langchain_google_vertexai import (
+    VertexAI,
+    VertexAIEmbeddings,
+    VectorSearchVectorStore
+)
 
 
-
-        for i,s_ in enumerate(page_content.split(header_spliter)):
-
-            first_line = s_.split("\n")[0]
-            len_first_line = len(first_line)
-
-
-            if pn_+i==0: # if first page first split
-                title_dict = {"title":s_.split("\n")[3]} #TBU
-            elif i==0 & len_first_line<10: # if an article is splitted into 2 pages, combine previous content together           
-                title_dict = {"title":f'{header_spliter}{title_}'}
-                previous_part = articles[-1].page_content
-                s_ = f"{previous_part} \n\n {s_}"
-                articles = articles[:-1]
-            else:
-                title_ = first_line
-                title_dict = {"title":f'{header_spliter}{title_}'}
-                s_ = f"{header_spliter}{s_}"
-            metadata_article = {**metadata,**title_dict}
-            article = Document(page_content=s_, metadata=metadata_article)
-            # print(metadata_article )
-            articles.append(article)
-    return articles
-
-# split articles to chunk
-from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
-
-def doc_to_chunk( docs,
-                  recusive = False,
-                  chunk_size= 1024,
-                  chunk_overlap=200
-                  ):
-    if recusive:
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=["\n\n", ".", "!", "?"]
-        )
-    else:
-        text_splitter = CharacterTextSplitter(
-            separator="\n\n",
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
-        )
-    doc_splits_list = []
-    for doc in docs:
-        doc_splits = text_splitter.split_documents([doc])
-
-        # Add chunk number to metadata
-        for idx, split in enumerate(doc_splits):
-            split.metadata["chunk"] = idx
-        doc_splits_list+=doc_splits
-    return doc_splits_list
-
-from utils.custom_vertexai_embeddings import CustomVertexAIEmbeddings
 
 def get_embeddings(
-    EMBEDDING_QPM: int = 100,
-    EMBEDDING_NUM_BATCH: int = 5
+    model_id = "textembedding-gecko-multilingual@001"
     ):
   
-    embeddings = CustomVertexAIEmbeddings(
-        requests_per_minute=EMBEDDING_QPM,
-        num_instances_per_batch=EMBEDDING_NUM_BATCH,
-    )
+    embeddings = VertexAIEmbeddings(model_name=model_id)
     
     return embeddings
 
-import json
+
 
 def get_me_parameters(file_path):
     #!gsutil cp gs://{chatbot_id}/me_parameters/{chatbot_id}_me.json ../vector_store_me_parameters/
@@ -89,7 +27,7 @@ def get_me_parameters(file_path):
         parameters = json.load(json_file)
     return parameters
 
-from utils.matching_engine import MatchingEngine
+
 
 def get_vector_store(parameters, embeddings):
     # Accessing parameters
@@ -100,13 +38,14 @@ def get_vector_store(parameters, embeddings):
     ME_EMBEDDING_DIR = parameters['ME_EMBEDDING_DIR']
 
     
-    me = MatchingEngine.from_components(
+    me = VectorSearchVectorStore.from_components(
                     project_id=PROJECT_ID,
                     region=LOCATION,
                     gcs_bucket_name=f"gs://{ME_EMBEDDING_DIR}".split("/")[2],
                     embedding=embeddings,
                     index_id=ME_INDEX_ID,
                     endpoint_id=ME_INDEX_ENDPOINT_ID,
+                    stream_update=True,
                     )
     return me
 

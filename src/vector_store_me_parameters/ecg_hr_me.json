@@ -1,1 +1,0 @@
-{"PROJECT_ID": "ecg-ai-416210", "LOCATION": "europe-west1", "CHATBOT_NAME": "ecg_hr", "ME_INDEX_ID": "projects/500033913879/locations/europe-west1/indexes/6522883518106697728", "ME_INDEX_ENDPOINT_ID": "projects/500033913879/locations/europe-west1/indexEndpoints/4871566586768523264", "ME_INDEX_NAME": "ecg_hr-me-index", "ME_EMBEDDING_DIR": "ecg_hr/me-bucket", "ME_DIMENSIONS": 768}
