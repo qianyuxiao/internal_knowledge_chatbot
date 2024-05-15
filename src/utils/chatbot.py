@@ -71,7 +71,9 @@ def get_vector_store_by_topic(topic : str
     if topic == "DPO":
         file_path = os.path.join(script_dir, "vector_store_me_parameters", "ecg_dpo_me.json")
     elif topic == "CNIL":
-        file_path = os.path.join(script_dir, "vector_store_me_parameters", "ecg_cnil_me.json")
+        file_path = os.path.join(script_dir, "vector_store_me_parameters", "dpo_cnil_me.json")
+    elif topic == "CNIL_SMALL":
+        file_path = os.path.join(script_dir, "vector_store_me_parameters", "dpo_cnil_small_chunk_me.json")
     elif topic == "HR":
         file_path = os.path.join(script_dir, "vector_store_me_parameters", "ecg_hr_me.json")
     else:
@@ -102,6 +104,7 @@ def get_template(model_option):
             Strictly Use ONLY the provided context to answer the question at the end. Think step-by-step as below and then answer.
         
             Response style:
+            - Only pick one most relevant document source in provided context. Do NOT combine context from different document sources.
             - Always citing the document title that you are generating answer from.
             
             Do not try to make up an answer:

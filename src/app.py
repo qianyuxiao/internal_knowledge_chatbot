@@ -94,7 +94,7 @@ def main():
     ### Choice box
     topic_option = st.sidebar.selectbox(
         'Topic',
-        ("CNIL","Insurance","DPO", "HR"))
+        ("CNIL","CNIL_SMALL","DPO"))
     
     search_distance = st.sidebar.slider('Retriver search distance',0.0, 1.0, 0.70)
     search_nb_docs = st.sidebar.slider('Retriver search maximum docs',1, 8, 4)
@@ -186,7 +186,7 @@ def main():
         conversation = ConversationChain(memory=st.session_state.memory, 
                                          prompt=prompt_template, 
                                          llm=llm, 
-                                         verbose=False)
+                                         verbose=True)
         
         response = conversation.predict(input=f"Context:\n {contexts} \n\n Query:\n{question_prompt}")
         
