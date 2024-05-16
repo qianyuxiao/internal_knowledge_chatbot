@@ -1,6 +1,6 @@
 from langchain.document_loaders import PyPDFLoader, UnstructuredPDFLoader
 import os
-from utils.general_utils import *
+from general_utils import *
 import nltk
 
 def nb_tokens(text):
@@ -35,39 +35,38 @@ def load_pdf_to_langchain_doc(
     return doc
 
 
-def process_folder(folder_path,
-                   unstructure: bool=False
-                  ):
+def process_folder(folder_path, unstructure=False):
     docs = []
     loaded_pdfs = []  
     unloaded_pdfs = []
     other_files = []
     
     for item in os.listdir(folder_path):
-        
         item_path = os.path.join(folder_path, item)
         print_with_time(f"Scanning {item_path}")
         
         if os.path.isdir(item_path):
-            #if it's folder go to next level
             print_with_time(f"{item_path} is folder, now go to new level")
-            process_folder(item_path)
+            # Recursively process the subfolder and capture the returned values
+            sub_docs, sub_unloaded_pdfs, sub_loaded_pdfs, sub_other_files = process_folder(item_path, unstructure)
+            docs.extend(sub_docs)
+            unloaded_pdfs.extend(sub_unloaded_pdfs)
+            loaded_pdfs.extend(sub_loaded_pdfs)
+            other_files.extend(sub_other_files)
             
         elif item.lower().endswith('.pdf'):
-
-                try:
-                    
-                    doc = load_pdf_to_langchain_doc(item_path,unstructure_loader=unstructure)
-                    if len(doc[0].page_content)>10:
-                        docs += doc
-                        loaded_pdfs.append(item_path)    
-                    else:
-                        unloaded_pdfs.append(item_path)    
-                    
-                except Exception as e:
-                    unloaded_pdfs.append(item_path)     
+            try:
+                doc = load_pdf_to_langchain_doc(item_path, unstructure_loader=unstructure)
+                if len(doc[0].page_content) > 10:
+                    docs += doc
+                    loaded_pdfs.append(item_path)    
+                else:
+                    unloaded_pdfs.append(item_path)    
+            except Exception as e:
+                unloaded_pdfs.append(item_path)     
         else:
             other_files.append(item_path)
+            
     return docs, unloaded_pdfs, loaded_pdfs, other_files
 
 def split_pages_into_artiles(pages,  header_spliter = "ARTICLE"):
