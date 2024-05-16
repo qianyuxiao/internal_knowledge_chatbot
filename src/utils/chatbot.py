@@ -68,7 +68,9 @@ def get_vector_store_by_topic(topic : str
         script_dir = ".."
     # print_debug(script_dir)
     # Set parameters file path based on the script directory
-    if topic == "DPO":
+    if topic =="All":
+        file_path = os.path.join(script_dir, "vector_store_me_parameters", "ecg_all_me.json")
+    elif topic == "DPO":
         file_path = os.path.join(script_dir, "vector_store_me_parameters", "ecg_dpo_me.json")
     elif topic == "CNIL":
         file_path = os.path.join(script_dir, "vector_store_me_parameters", "dpo_cnil_me.json")
@@ -77,8 +79,7 @@ def get_vector_store_by_topic(topic : str
     elif topic == "HR":
         file_path = os.path.join(script_dir, "vector_store_me_parameters", "ecg_hr_me.json")
     else:
-        file_path = os.path.join(script_dir, "vector_store_me_parameters", "ecg_assurance_me.json")
-
+        file_path = os.path.join(script_dir, "vector_store_me_parameters", "ecg_all_me.json")
     
     #Set parameters
     parameters =  get_me_parameters(file_path)

@@ -2,7 +2,7 @@ from datetime import datetime
 import time
 import streamlit as st
 from utils.chatbot import *
-
+from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import (Namespace, NumericNamespace)
 
 def st_write_speed(start,end):
     speed = (end-start).seconds
@@ -14,18 +14,18 @@ def print_info(msg):
     print(msg)
     
 
-def greet_msg(topic_option):
-    greet_msg  = f"Greetings! I'm here to assist you with any inquiries concerning ** {topic_option} **. Should you wish to explore other subjects, feel free to update your topic option on the left-hand side. "
+def greet_msg(department_option):
+    greet_msg  = f"Greetings! I'm here to assist you with any inquiries concerning ** {department_option}**. Should you wish to explore other subjects, feel free to update your topic option on the left-hand side. "
     for word in greet_msg.split():
         yield word + " "
         time.sleep(0.03)
 
-def init_st_session_state(topic_option,
+def init_st_session_state(vector_store_option,
                           model_option,
                           show_ref_content_option):
     print("Initiating session state....")
     st.session_state.messages = []
-    st.session_state.topic_option = topic_option
+    st.session_state.vector_store_option = vector_store_option
     st.session_state.model_option = model_option
     st.session_state.show_ref_content_option = show_ref_content_option
     st.session_state.memory =  get_memory() 
@@ -52,9 +52,9 @@ def load_model(model_option,
     return llm
 
 @st.cache_resource
-def load_vector_store(topic_option):
-    print_info(f"Load vector store for {topic_option}")
-    vector_store = get_vector_store_by_topic(topic_option)  
+def load_vector_store(vector_store_option):
+    print_info(f"Loading vector store...")
+    vector_store = get_vector_store_by_topic(vector_store_option)  
     return vector_store
 
 @st.cache_resource
@@ -64,10 +64,10 @@ def load_qa_template(model_option):
 def reset_vector_store():
     load_vector_store.clear()
 
-def get_google_doc_link(topic_option):
-    if topic_option=="DPO":
+def get_google_doc_link(vector_store_option):
+    if vector_store_option=="DPO":
         g_link = "https://drive.google.com/drive/folders/1aIxinK3LugUGlNIr23mQSTxqn8fSdxsi"
-    elif topic_option == "HR":
+    elif vector_store_option == "HR":
         g_link = "https://drive.google.com/drive/folders/1zNhiZvSny3rpP18OGfW4O8JSHqCF9QRK"
     else:
         g_link = "https://drive.google.com/drive/folders/1Rr9F7N1HYNLqIyAcVdqtoMg6BuhhdKZq"
@@ -92,9 +92,21 @@ def main():
     st.sidebar.markdown("- You can find the original documents that chatbot is retrieving knowledge from [here](https://drive.google.com/drive/folders/1TtxvSAeDBQh50r18OOOIoUyCbbAfHq-W)")
     
     ### Choice box
-    topic_option = st.sidebar.selectbox(
-        'Topic',
-        ("CNIL","CNIL_SMALL","DPO"))
+    department_option = st.sidebar.selectbox(
+        'Department',
+        ("dpo","insurance"))
+    
+    pdfloader_option = st.sidebar.selectbox(
+        'PDF Loaded Method',
+        ("unstructured","structured"))
+    
+    chunk_option = st.sidebar.selectbox(
+        'Chunk Size',
+        (500.0,2000.0,4000.0))
+    
+    vector_store_option = st.sidebar.selectbox(
+        'Vector Store',
+        ("Vertex"))
     
     search_distance = st.sidebar.slider('Retriver search distance',0.0, 1.0, 0.70)
     search_nb_docs = st.sidebar.slider('Retriver search maximum docs',1, 8, 4)
@@ -121,19 +133,19 @@ def main():
                top_p=llm_top_p,
                top_k=llm_top_k
                )
-    me = load_vector_store(topic_option)
+    me = load_vector_store("All")
     prompt_template = load_qa_template(model_option)
-    g_link = get_google_doc_link(topic_option)
+    g_link = get_google_doc_link(vector_store_option)
 
     
     # Show messages
     if 'messages' not in st.session_state:
-        init_st_session_state(topic_option,
+        init_st_session_state(vector_store_option,
                               model_option,
                               show_ref_content_option)
         # memory.clear()
         with st.chat_message("assistant"):
-            st.write(greet_msg(st.session_state.topic_option))
+            st.write(greet_msg(department_option))
     
 
     show_message()
@@ -147,23 +159,13 @@ def main():
             
         # check if model option changes
         if st.session_state.model_option!=model_option:
-            init_st_session_state(topic_option,
+            init_st_session_state(vector_store_option,
                               model_option,
                               show_ref_content_option)
             st.write(f"Clearing cache and changing model to {model_option}...")
             llm = get_llm(model_option)
             prompt_template = load_qa_template(model_option)
             st.session_state.model_option = model_option
-
-        # check if topic change
-        if st.session_state.topic_option!=topic_option:
-            init_st_session_state(topic_option,
-                              model_option,
-                              show_ref_content_option)
-            st.write(f"Clearing cache and changing model to {topic_option}...")
-            me = load_vector_store(topic_option)
-            g_link = get_google_doc_link(topic_option)
-            st.session_state.topic_option = topic_option
 
             
         # get answer and stream answer
@@ -177,10 +179,20 @@ def main():
         else:
             refined_question = question_prompt
         
+        # Set vector store filter 
+        filters = [Namespace(name="department", allow_tokens=[department_option]),
+           Namespace(name="loader_method", allow_tokens=[pdfloader_option])
+          ]
+
+
+        numeric_filters = [NumericNamespace(name="chunk_size", value_float=chunk_option, op="EQUAL")]
+        
         # retrive documents
         contexts = me.similarity_search(refined_question,
                                         k=search_nb_docs,
-                                        search_distance=search_distance)
+                                        search_distance=search_distance, 
+                                        filter=filters, 
+                                        numeric_filter=numeric_filters)
         
         # conversation chain
         conversation = ConversationChain(memory=st.session_state.memory, 
