@@ -33,3 +33,5 @@ unstructured-inference==0.7.24
 pikepdf==8.13.0 
 pypdf==4.
 unstructured_pytesseract
+
+accelerate
