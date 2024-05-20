@@ -190,7 +190,7 @@ def main():
     #     'Chatbot model',
     #     ("chat-bison", "gemini-pro" ))
     
-    model_option = "chat-bison"
+    model_option = "meta-llama/Meta-Llama-3-8B-Instruct"
     
     show_ref_content_option = st.sidebar.selectbox(
         'Show Ref. Content?',
