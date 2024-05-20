@@ -4,6 +4,12 @@ import streamlit as st
 from utils.chatbot import *
 from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import (Namespace, NumericNamespace)
 
+#local model packages
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+import torch
+from transformers import TextIteratorStreamer
+from threading import Thread
+
 def st_write_speed(start,end):
     speed = (end-start).seconds
     st.write(f'{speed}s used')
@@ -37,29 +43,95 @@ def reset_conversation():
   st.session_state.memory.clear()
   
 # chatbot related cache function    
-# @st.cache_resource
-def load_model(model_option,
-               temperature,
-               top_p,
-               top_k
+# local models
+@st.cache_resource
+def load_local_model(model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
                ):
-    print_info(f"Load model {model_option}")
-    llm = get_llm(model_option,
-                  temperature=temperature,
-                  top_p=top_p,
-                  top_k=top_k
-                  )   
-    return llm
+    # use quantization to lower GPU usage
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True, bnb_4bit_use_double_quant=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+    )
 
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        quantization_config=bnb_config
+    )
+    terminators = [
+        tokenizer.eos_token_id,
+        tokenizer.convert_tokens_to_ids("<|eot_id|>")
+    ]
+    
+    streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+    
+    return model,tokenizer, terminators,streamer
+
+@st.cache_resource
+def get_response(messages,
+                 llm_temperature,
+                 llm_top_p,
+                 llm_top_k,
+                 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+                 ):
+    model,tokenizer, terminators,streamer = load_local_model(model_id)
+    
+    # apply chat template
+    messages_tmpl = tokenizer.apply_chat_template(messages,
+                        tokenize=False,
+                        add_generation_prompt=True
+                        )
+
+    # tokenize msgs
+    inputs = tokenizer([messages_tmpl], return_tensors="pt").to('cuda')
+    
+    # Run the generation in a separate thread, so that we can fetch the generated text in a non-blocking way.
+    generation_kwargs = dict(inputs, 
+                            streamer=streamer, 
+                            max_new_tokens=1500,
+                            eos_token_id=terminators,
+                            top_k= llm_top_k,
+                            top_p= llm_top_p,
+                            do_sample=True,
+                            temperature=llm_temperature,
+                            )
+    # chat
+    thread = Thread(target=model.generate,
+                    kwargs=generation_kwargs)
+    thread.start() 
+    
+    for _, new_text in enumerate(streamer):
+        yield new_text
+    
+def format_prompt(prompt,retrieved_documents):
+    """using the retrieved documents we will prompt the model to generate our responses"""
+    formatted_prompt = f"Question:{prompt}\nContext: \n"
+    separated_line = "-"*50+"\n"
+    for idx,doc in enumerate(retrieved_documents) :
+        formatted_prompt+= f"{separated_line} Ranked Document: {idx+1} \nName: {doc.metadata['document_name']}\nContent: {doc.page_content} \n"
+    return formatted_prompt
+
+def processed_msgs(refined_question,retrieved_documents):
+    
+    SYS_PROMPT = """You are an assistant for answering questions.
+    You are given the extracted parts of several documents rank by relevance with document name and a question. Please pick the most relevant document related to the question then 
+    provide a conversational answer in the same language as the question. Always cite the referred document in your response.
+    If you don't know the answer, just say "I do not know." Don't make up an answer."""
+    
+    formatted_prompt = format_prompt(refined_question,retrieved_documents)
+    
+    messages = [{"role":"system","content":SYS_PROMPT},{"role":"user","content":formatted_prompt}]
+    
+    return messages
+    
+# Vector store 
 @st.cache_resource
 def load_vector_store(vector_store_option):
     print_info(f"Loading vector store...")
     vector_store = get_vector_store_by_topic(vector_store_option)  
     return vector_store
 
-@st.cache_resource
-def load_qa_template(model_option):
-    return get_template(model_option)
 
 def reset_vector_store():
     load_vector_store.clear()
@@ -128,13 +200,7 @@ def main():
     st.sidebar.button('Clear Vector Store Cache', on_click=reset_vector_store, type="primary")
     
     # Load and cache chatbot element
-    llm = load_model(model_option,
-               temperature=llm_temperature,
-               top_p=llm_top_p,
-               top_k=llm_top_k
-               )
     me = load_vector_store("All")
-    prompt_template = load_qa_template(model_option)
     g_link = get_google_doc_link(vector_store_option)
 
     
@@ -156,17 +222,6 @@ def main():
         st.session_state.messages.append({"role": "user", "content": question_prompt})
         with st.chat_message("user"):
             st.markdown(question_prompt)
-            
-        # check if model option changes
-        if st.session_state.model_option!=model_option:
-            init_st_session_state(vector_store_option,
-                              model_option,
-                              show_ref_content_option)
-            st.write(f"Clearing cache and changing model to {model_option}...")
-            llm = get_llm(model_option)
-            prompt_template = load_qa_template(model_option)
-            st.session_state.model_option = model_option
-
             
         # get answer and stream answer
         start = datetime.now()
@@ -194,14 +249,17 @@ def main():
                                         filter=filters, 
                                         numeric_filter=numeric_filters)
         
-        # conversation chain
-        conversation = ConversationChain(memory=st.session_state.memory, 
-                                         prompt=prompt_template, 
-                                         llm=llm, 
-                                         verbose=True)
+        # process messgaes
+        messages = processed_msgs(refined_question,contexts)
         
-        response = conversation.predict(input=f"Context:\n {contexts} \n\n Query:\n{refined_question}")
-        
+        # get response
+        response = get_response(messages,
+                    llm_temperature,
+                    llm_top_p,
+                    llm_top_k,
+                    model_id = model_option
+                    )
+            
         with st.chat_message("assistant"):
             st.write(response)
             print(response)
