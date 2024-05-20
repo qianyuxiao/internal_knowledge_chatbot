@@ -5,9 +5,8 @@ from utils.chatbot import *
 from google.cloud.aiplatform.matching_engine.matching_engine_index_endpoint import (Namespace, NumericNamespace)
 
 #local model packages
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, TextIteratorStreamer
 import torch
-from transformers import TextIteratorStreamer
 from threading import Thread
 
 def st_write_speed(start,end):
@@ -90,10 +89,11 @@ def get_response(messages,
     generation_kwargs = dict(inputs, 
                             streamer=streamer, 
                             max_new_tokens=1500,
-                            eos_token_id=terminators,
+                            pad_token_id=tokenizer.eos_token_id,
+                            # eos_token_id=terminators,
                             top_k= llm_top_k,
                             top_p= llm_top_p,
-                            do_sample=True,
+                            do_sample=False,
                             temperature=llm_temperature,
                             )
     # chat
@@ -178,7 +178,7 @@ def main():
     
     vector_store_option = st.sidebar.selectbox(
         'Vector Store',
-        ("Vertex"))
+        ("Vertex",))
     
     search_distance = st.sidebar.slider('Retriver search distance',0.0, 1.0, 0.70)
     search_nb_docs = st.sidebar.slider('Retriver search maximum docs',1, 8, 4)
@@ -252,8 +252,12 @@ def main():
         # process messgaes
         messages = processed_msgs(refined_question,contexts)
         
+        print("messages:","*"*50)
+        print(messages)
+        print("*"*50)
+        
         # get response
-        response = get_response(messages,
+        stream_response = get_response(messages,
                     llm_temperature,
                     llm_top_p,
                     llm_top_k,
@@ -261,8 +265,10 @@ def main():
                     )
             
         with st.chat_message("assistant"):
-            st.write(response)
+            response = st.write_stream(stream_response)
+            print("response:","*"*50)
             print(response)
+            print("*"*50)
             #get reference documents
             source_and_articles = set()
             for _, s_ in enumerate(contexts):
@@ -271,7 +277,7 @@ def main():
                 title = s_.metadata.get("title")
                 page = s_.metadata.get("page")
                 page_content = s_.page_content
-                print(s_)
+                #print(s_)
                 title_msg = ""
                 if title !=None:
                     title_msg = f"Title {title}, "
@@ -286,7 +292,7 @@ def main():
                     
             st.write("-"*100)
             st.markdown(f"Info based on documents under [google drive]({g_link})")
-            if len(contexts)>0 and response.strip()!="Do you want to ask a question?":
+            if len(contexts)>0:
                 # show reference documents                    
                 for item in source_and_articles:
                     st.write(item)
