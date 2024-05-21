@@ -67,6 +67,7 @@ def query_refiner(conversation:str,
 # prompt related
 SYS_PROMPT = """You are an assistant for answering questions.
 You are given the extracted parts of several documents rank by relevance with document name and a question. Please pick the most relevant document related to the question then provide a conversational answer in the same language as the question. Always cite the referred document in your response.
+Strictly Use ONLY the provided context to answer the question at the end. Think step-by-step as below and then answer.
 If you don't know the answer, just say "I do not know." Don't make up an answer."""
 
 def format_prompt(prompt,retrieved_documents):
@@ -109,7 +110,69 @@ def get_response_vertex(
 
     return chain.invoke({"question": formatted_prompt})
 
-# chat
+# local models
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, TextIteratorStreamer
+import torch
+from threading import Thread
+@st.cache_resource
+def load_local_model(model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+               ):
+    # use quantization to lower GPU usage
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True, bnb_4bit_use_double_quant=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+        quantization_config=bnb_config
+    )
+    
+    streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+    
+    return model,tokenizer,streamer
+
+def get_response_local_llm(question,
+                    retrieved_documents,
+                    model_id
+                    ):
+    model,tokenizer, streamer = load_local_model(model_id)
+    
+    formatted_prompt = format_prompt(question,retrieved_documents)
+    
+    messages = [{"role":"system","content":SYS_PROMPT},{"role":"user","content":formatted_prompt}]
+    
+    # apply chat template
+    messages_tmpl = tokenizer.apply_chat_template(messages,
+                        tokenize=False,
+                        add_generation_prompt=True
+                        )
+
+    # tokenize msgs
+    inputs = tokenizer([messages_tmpl], return_tensors="pt").to('cuda')
+    
+    # Run the generation in a separate thread, so that we can fetch the generated text in a non-blocking way.
+    generation_kwargs = dict(inputs, 
+                            streamer=streamer, 
+                            max_new_tokens=1500,
+                            pad_token_id=tokenizer.eos_token_id,
+                            # eos_token_id=terminators,
+                            # top_k= llm_top_k,
+                            # top_p= llm_top_p,
+                            do_sample=False,
+                            temperature=0.0,
+                            )
+    # chat
+    thread = Thread(target=model.generate,
+                    kwargs=generation_kwargs)
+    thread.start() 
+    
+    for _, new_text in enumerate(streamer):
+        yield new_text
+        
+# all chat model combined
 def get_response(
     question,
     retrieved_documents,
@@ -119,6 +182,12 @@ def get_response(
     
     if model_id!="meta-llama/Meta-Llama-3-8B-Instruct":
         return get_response_vertex(
+                        question,
+                        retrieved_documents,
+                        model_id
+                        )
+    else:
+        return get_response_local_llm(
                         question,
                         retrieved_documents,
                         model_id
@@ -139,7 +208,7 @@ def main():
     ## Set title and sidebar
     
     ## Header
-    title = "ECG Internal Knowledge Chatbot"
+    title = "ECG Internal Knowledge Chatbot - Test Version"
     st.set_page_config(page_title="ECG Internal Knowledge Chatbot - Test Version", page_icon="https://jobs.europeancampinggroup.com/generated_contents/images/company_logo_career/ZMbqNXm9-logo-ecg-new-small.png")
     st.title(title)
     
