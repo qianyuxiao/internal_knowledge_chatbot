@@ -110,6 +110,8 @@ def format_prompt(prompt,retrieved_documents):
     separated_line = "-"*50+"\n"
     for idx,doc in enumerate(retrieved_documents) :
         formatted_prompt+= f"{separated_line} Ranked Document: {idx+1} \nName: {doc.metadata['document_name']}\nContent: {doc.page_content} \n"
+    
+    formatted_prompt += "\n Answer: Let's think step by step."
     return formatted_prompt
 
 def processed_msgs(refined_question,retrieved_documents):
@@ -154,14 +156,14 @@ def main():
     
     ## Header
     title = "ECG Internal Knowledge Chatbot"
-    st.set_page_config(page_title="ECG Internal Knowledge Chatbot", page_icon="https://jobs.europeancampinggroup.com/generated_contents/images/company_logo_career/ZMbqNXm9-logo-ecg-new-small.png")
+    st.set_page_config(page_title="ECG Internal Knowledge Chatbot - Test Version", page_icon="https://jobs.europeancampinggroup.com/generated_contents/images/company_logo_career/ZMbqNXm9-logo-ecg-new-small.png")
     st.title(title)
     
     ## Sidebar
-    st.sidebar.image("https://jobs.europeancampinggroup.com/generated_contents/images/company_logo_career/ZMbqNXm9-logo-ecg-new-small.png")
-    st.sidebar.title('Usage and Limitation')
-    st.sidebar.write("- LLMs generate responses based on information they learned from their training datasets, but they are not knowledge bases. They may generate incorrect or outdated factual statements.")
-    st.sidebar.markdown("- You can find the original documents that chatbot is retrieving knowledge from [here](https://drive.google.com/drive/folders/1TtxvSAeDBQh50r18OOOIoUyCbbAfHq-W)")
+    # st.sidebar.image("https://jobs.europeancampinggroup.com/generated_contents/images/company_logo_career/ZMbqNXm9-logo-ecg-new-small.png")
+    # st.sidebar.title('Usage and Limitation')
+    # st.sidebar.write("- LLMs generate responses based on information they learned from their training datasets, but they are not knowledge bases. They may generate incorrect or outdated factual statements.")
+    # st.sidebar.markdown("- You can find the original documents that chatbot is retrieving knowledge from [here](https://drive.google.com/drive/folders/1TtxvSAeDBQh50r18OOOIoUyCbbAfHq-W)")
     
     ### Choice box
     department_option = st.sidebar.selectbox(
