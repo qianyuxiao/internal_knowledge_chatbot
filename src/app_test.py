@@ -1,6 +1,8 @@
 from datetime import datetime
-import time
 import streamlit as st
+from streamlit_feedback import streamlit_feedback
+# from trubrics.integrations.streamlit import FeedbackCollector
+import uuid
 
 def print_info(msg):
     print("-"*100)
@@ -90,7 +92,7 @@ def get_response_vertex(
     model = VertexAI(
         model_name=model_id, #"gemini-1.0-pro", #"text-bison@002",
         max_output_tokens=1500,
-        temperature=0.0,
+        temperature=0,
         verbose=True,
         streaming = True
         )
@@ -161,7 +163,7 @@ def get_response_local_llm(question,
                             # eos_token_id=terminators,
                             # top_k= llm_top_k,
                             # top_p= llm_top_p,
-                            do_sample=False,
+                            do_sample=True,
                             temperature=0.0,
                             )
     # chat
@@ -243,6 +245,11 @@ def main():
         st.session_state.messages = []
     show_message()
     
+    # initiate uuid
+    if 'uuid' not in st.session_state:
+        st.session_state.uuid= uuid.uuid4()
+        
+    
     # chat flow
     question_example = "Saisissez votre question ici, par exemple : Ce qui n'est pas inclus dans le prix de la réservation ?"
     if question_prompt := st.chat_input(question_example):
@@ -315,6 +322,16 @@ def main():
         st_write_speed(start,end)
 
         st.session_state.messages.append({"role": "assistant", "content": f"{response}"})
+        print(st.session_state.uuid)
+        feedback = streamlit_feedback(
+                        feedback_type="faces",
+                        optional_text_label="[Optional] Please provide an explanation",
+                        key=f"feedback_{st.session_state.uuid}",
+                    )
+        scores = {"😀": 1, "🙂": 0.75, "😐": 0.5, "🙁": 0.25, "😞": 0}
+        if feedback:
+            score = scores.get(feedback["score"])
+            print(score)
         
 if __name__ == "__main__":
     main()
