@@ -14,6 +14,9 @@ All Vector Store organized by chatbot-id.
    - Undeploy and delete the existing index and endpoint under [here](https://console.cloud.google.com/vertex-ai/matching-engine/indexes?project=ecg-ai-416210).
    - Delete its me-bucket under [gcp bucket](https://console.cloud.google.com/storage/browser?project=ecg-ai-416210&pageState=(%22StorageBucketsTable%22:(%22f%22:%22%255B%255D%22,%22s%22:%5B(%22i%22:%22name%22,%22s%22:%220%22)%5D,%22r%22:30))&prefix=&forceOnBucketsSortingFiltering=true)
 
+2. **Add Files to Vector Store**
+   src/notebooks/20240516_all_files_vector_store.ipynb
+
 2. **Download Parameters:**
    - Download the necessary parameters to your local machine.
      ```bash
@@ -43,7 +46,8 @@ All Vector Store organized by chatbot-id.
      ```bash
      sudo kill -9 {pid}
      ```
-
+     or 
+     sudo killall -9 streamlit
 3. **Reference**
    - [How to use Insurance documents](https://docs.google.com/document/d/1tEfC0ebZDBpDwmxZM5mCYC4dAHOCOp9Sj1ht74APxI4/edit)
 ---
