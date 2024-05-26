@@ -4,6 +4,13 @@ from streamlit_feedback import streamlit_feedback
 # from trubrics.integrations.streamlit import FeedbackCollector
 import uuid
 
+#feedback related
+import uuid
+import datetime as dt
+from google.cloud import bigquery
+from utils.bq_utils import load_json_to_bq
+from streamlit_feedback import streamlit_feedback
+
 def print_info(msg):
     print("-"*100)
     print(msg)
@@ -205,6 +212,82 @@ def st_write_speed(start,end):
     speed = (end-start).seconds
     st.write(f'{speed}s used')
     return speed
+
+# feedback related
+## Parameters
+APP_TYPE = "rag"
+FEEDBACK_OUTPUT_TABLE = f"ecg-big-data-sandbox.qianyu_test.chatbot_evaluation_{APP_TYPE}"
+
+## st session state
+def incr_run_id():
+    st.session_state.run_id +=1
+
+def update_session_state(model_id,
+                         department_option,
+                         pdfloader_option,
+                         chunk_option,
+                         question_prompt:str,
+                         response: str,
+                         response_time_s
+                         ):
+    st.session_state.model_id = model_id
+    st.session_state.department_option = department_option
+    st.session_state.pdfloader_option = pdfloader_option
+    st.session_state.chunk_option = chunk_option
+    st.session_state.question_prompt = question_prompt
+    st.session_state.response = response
+    st.session_state.response_time_s = response_time_s
+
+def init_session_state():
+    st.session_state.messages = []
+    st.session_state.feedback = dict()
+    st.session_state.uuid = str(uuid.uuid4())
+    st.session_state.run_id = 0
+    st.session_state.question_prompt = None
+    st.session_state.response = None
+    st.session_state.response_time_s = None
+    st.session_state.model_id = None
+    st.session_state.department_option = None
+    st.session_state.pdfloader_option = None
+    st.session_state.chunk_option = None
+
+        
+def get_feedback_dict(
+                      score):
+    feedback_dict = {
+        "app_type": APP_TYPE,
+        "uuid": st.session_state.uuid,
+        "run_id": st.session_state.run_id,
+        "feedback_time":dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "model_id": st.session_state.model_id,
+        "department_option":st.session_state.department_option,
+        "pdfloader_option":st.session_state.pdfloader_option,
+        "chunk_option":st.session_state.chunk_option,
+        "question": st.session_state.question_prompt,
+        "response": st.session_state.response,
+        "response_time_s": st.session_state.response_time_s,
+        "score": score
+    }
+    return feedback_dict
+
+FEEDBACK_SCHEMA = [
+    bigquery.SchemaField("uuid", "STRING"),
+    bigquery.SchemaField("run_id", "INT64"),
+    bigquery.SchemaField("app_type", "STRING"),
+    bigquery.SchemaField("model_id", "STRING"),
+    bigquery.SchemaField("department_option", "STRING"),
+    bigquery.SchemaField("pdfloader_option", "STRING"),
+    bigquery.SchemaField("chunk_option", "FLOAT64"),
+    bigquery.SchemaField("feedback_time", "TIMESTAMP"),
+    bigquery.SchemaField("response_time_s", "INT64"),
+    bigquery.SchemaField("question", "STRING"),
+    bigquery.SchemaField("response", "STRING"),
+    bigquery.SchemaField("score", "FLOAT64")
+]
+
+# initiate messages
+if 'messages' not in st.session_state:
+    init_session_state()
            
 def main():
     ## Set title and sidebar
@@ -215,7 +298,6 @@ def main():
     st.title(title)
     
     ### Choice box
-    
     
     department_option = st.sidebar.selectbox(
         'Department',
@@ -239,16 +321,10 @@ def main():
     
     show_ref_content_option = st.sidebar.selectbox(
         'Show Ref. Content?',
-        (False, True)) 
-    # initiate messages
-    if 'messages' not in st.session_state:
-        st.session_state.messages = []
-    show_message()
+        (False, True))    
     
-    # initiate uuid
-    if 'uuid' not in st.session_state:
-        st.session_state.uuid= uuid.uuid4()
-        
+    #show message
+    show_message()
     
     # chat flow
     question_example = "Saisissez votre question ici, par exemple : Ce qui n'est pas inclus dans le prix de la réservation ?"
@@ -284,7 +360,6 @@ def main():
                 response = st.write_stream(response)
             else:
                 st.write(response)
-            
             print("response:","*"*50)
             print(response)
             print("*"*50)
@@ -322,16 +397,45 @@ def main():
         st_write_speed(start,end)
 
         st.session_state.messages.append({"role": "assistant", "content": f"{response}"})
-        print(st.session_state.uuid)
-        feedback = streamlit_feedback(
-                        feedback_type="faces",
-                        optional_text_label="[Optional] Please provide an explanation",
-                        key=f"feedback_{st.session_state.uuid}",
-                    )
+    
+    # feedback related flow
+        response_time_s = (end-start).seconds
+        
+        #write to session
+        if response:
+            incr_run_id()
+            update_session_state(model_option,
+                         department_option,
+                         pdfloader_option,
+                         chunk_option,
+                         refined_question,
+                         response,
+                         response_time_s
+                         )
+             
+    if st.session_state.run_id>0:
+        print("get feedback")
+        #set feedbackid
+        uid = st.session_state.uuid
+        run_id = st.session_state.run_id
+        feedback_id = f"{uid}_{run_id}"
+        print("feedback_bf",feedback_id)
+        
+        st.session_state.feedback = streamlit_feedback(
+            feedback_type="faces",
+            # optional_text_label="[Optional] Please provide an explanation",
+            key=feedback_id,
+        )
+            
         scores = {"😀": 1, "🙂": 0.75, "😐": 0.5, "🙁": 0.25, "😞": 0}
-        if feedback:
-            score = scores.get(feedback["score"])
+        if st.session_state.feedback:
+            score = scores.get(st.session_state.feedback["score"])
             print(score)
+            print("feedback_af",st.session_state.run_id)
+            st.session_state.feedback_id = st.session_state.run_id
+            feedback_dict = get_feedback_dict(score)
+            load_json_to_bq(feedback_dict, FEEDBACK_SCHEMA,FEEDBACK_OUTPUT_TABLE)
+            # st.write(f"Feedback Score: {score}. Thanks for your feedback.")
         
 if __name__ == "__main__":
     main()
